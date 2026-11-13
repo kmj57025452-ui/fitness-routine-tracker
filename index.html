@@ -1,0 +1,237 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FIT QUEST | 운동 루틴 트래커</title>
+<style>
+:root{--bg:#10151d;--panel:#1b2430;--panel2:#242f3d;--green:#a3e635;--text:#f1f5f9;--muted:#9aa8b8;--red:#fb7185;--blue:#60a5fa}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;padding:20px 14px 50px}
+main{max-width:850px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.logo{font-weight:900;font-size:22px;letter-spacing:1px}.logo span{color:var(--green)}
+.card{background:var(--panel);border:1px solid #303b49;border-radius:17px;padding:17px;margin-bottom:15px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{text-align:center;background:var(--panel2);border-radius:13px;padding:14px 5px}
+.stat strong{display:block;font-size:25px;color:var(--green)}
+.stat small{color:var(--muted)}
+h2{font-size:18px;margin:0 0 15px}
+h3{font-size:15px;margin:0 0 12px}
+button,input{font:inherit}
+button{cursor:pointer;border:0;border-radius:10px;padding:10px 13px;background:var(--panel2);color:var(--text)}
+button.primary{background:var(--green);color:#17200b;font-weight:800}
+button.danger{color:var(--red)}
+button:active{transform:scale(.97)}
+.month-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+.month-head strong{font-size:18px}
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.weekday{text-align:center;color:var(--muted);font-size:12px;padding:5px 0}
+.day{min-height:54px;border-radius:10px;background:var(--panel2);padding:6px 2px;text-align:center;font-size:13px;position:relative;border:2px solid transparent}
+.day.empty{background:transparent}
+.day.selected{border-color:var(--green)}
+.day.today{color:var(--green);font-weight:900}
+.day.done:after{content:"✓";display:block;color:var(--green);font-weight:900}
+.day.partial:after{content:"·";display:block;color:#fbbf24;font-size:23px;line-height:13px}
+.day.missed:after{content:"×";display:block;color:var(--red);font-weight:900}
+.day.rest:after{content:"休";display:block;color:var(--muted);font-size:10px}
+.day.future:after{content:"";display:block}
+.day.other{opacity:.25}
+.day-label{font-size:10px;color:var(--muted)}
+.exercise{background:var(--panel2);border-radius:12px;padding:12px;margin-bottom:9px}
+.exercise-top{display:flex;align-items:center;gap:10px}
+.exercise-top input[type=checkbox]{width:21px;height:21px;accent-color:var(--green);flex-shrink:0}
+.exercise-name{font-weight:750;flex:1;min-width:0}
+.exercise.done .exercise-name{text-decoration:line-through;color:var(--muted)}
+.fields{display:flex;gap:7px;margin:10px 0 0 31px;flex-wrap:wrap}
+.fields label{font-size:11px;color:var(--muted)}
+.fields input{display:block;width:65px;margin-top:4px;background:#111923;border:1px solid #3b4857;border-radius:7px;color:white;padding:7px}
+.fields .name-input{width:125px}
+.remove{padding:5px 8px;color:var(--red)}
+input{min-width:0}
+.add-row{display:flex;gap:8px;margin-top:12px}
+.add-row input{flex:1;background:#111923;border:1px solid #3b4857;color:white;border-radius:9px;padding:10px}
+.progress{height:9px;background:#344052;border-radius:20px;overflow:hidden;margin:12px 0}
+.progress div{height:100%;background:var(--green);width:0%;transition:.3s}
+.muted{color:var(--muted);font-size:13px}
+.day-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.notice{text-align:center;padding:20px;color:var(--muted)}
+footer{text-align:center;color:var(--muted);font-size:11px;margin-top:25px}
+@media(max-width:450px){body{padding:14px 10px}.card{padding:13px}.day{min-height:46px}.fields{margin-left:0}.fields input{width:58px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+ <div class="logo">FIT <span>QUEST</span></div>
+ <div class="muted">MY FITNESS JOURNEY</div>
+</header>
+
+<section class="card">
+ <div class="stats">
+  <div class="stat"><strong id="current">0</strong><small>현재 스트릭</small></div>
+  <div class="stat"><strong id="best">0</strong><small>최장 스트릭</small></div>
+  <div class="stat"><strong id="total">0</strong><small>완료한 운동일</small></div>
+ </div>
+</section>
+
+<section class="card">
+ <div class="month-head">
+  <button id="prev">←</button>
+  <strong id="month"></strong>
+  <button id="next">→</button>
+ </div>
+ <div class="calendar" id="calendar"></div>
+ <div class="muted" style="margin-top:12px">✓ 완료　· 일부 완료　× 미완료　休 휴식</div>
+</section>
+
+<section class="card">
+ <div class="day-title">
+  <div><div class="muted" id="selected-date"></div><h2 id="day-heading">오늘의 운동</h2></div>
+  <button id="today">오늘</button>
+ </div>
+ <div class="progress"><div id="progress-bar"></div></div>
+ <div class="muted" id="progress-text">운동을 시작해 보자!</div>
+ <div id="exercise-list"></div>
+ <div class="add-row">
+  <input id="new-name" placeholder="운동 이름 입력">
+  <button class="primary" id="add">+ 추가</button>
+ </div>
+ <p class="muted">세트 · 횟수 · 무게를 자유롭게 기록할 수 있어.</p>
+</section>
+
+<section class="card">
+ <h3>요일별 루틴 관리</h3>
+ <div class="muted" style="margin-bottom:12px">요일을 선택하면 해당 요일의 반복 루틴을 편집할 수 있어. 변경 사항은 과거 기록을 지우지 않아.</div>
+ <div id="weekday-buttons" style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px"></div>
+ <div class="muted" id="template-info" style="margin-top:12px"></div>
+</section>
+
+<footer>FIT QUEST · 꾸준함이 실력이다.</footer>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const KEY="fitQuestDataV1";
+const weekdays=["일","월","화","수","목","금","토"];
+const today=new Date();
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const parse=s=>new Date(s+"T12:00:00");
+let data;
+try{data=JSON.parse(localStorage.getItem(KEY))||{};}catch(e){data={};}
+data.plans=data.plans||{};
+data.records=data.records||{};
+let selected=iso(today);
+let monthDate=new Date(today.getFullYear(),today.getMonth(),1);
+let editDay=parse(selected).getDay();
+
+function save(){localStorage.setItem(KEY,JSON.stringify(data));}
+function plan(day){return data.plans[day]||[];}
+function record(date){return data.records[date]||{};}
+function status(date){
+ const d=parse(date),p=plan(d.getDay());
+ if(!p.length)return "rest";
+ if(date>iso(today))return "future";
+ const r=record(date),n=p.filter(x=>r[x.id]).length;
+ return n===p.length?"done":n?"partial":"missed";
+}
+function stats(){
+ let completed=0,current=0,best=0,run=0;
+ const end=iso(today);
+ let dates=[];
+ for(let d=new Date(today.getFullYear(),today.getMonth(),today.getDate());d>=new Date(today.getFullYear()-2,today.getMonth(),today.getDate());d.setDate(d.getDate()-1)){
+  const s=iso(d);
+  if(plan(d.getDay()).length)dates.push(s);
+ }
+ dates.reverse();
+ dates.forEach(s=>{
+  if(status(s)==="done"){completed++;run++;best=Math.max(best,run);}
+  else if(status(s)==="missed"){run=0;}
+ });
+ let latest=dates.filter(s=>s<=end).pop();
+ if(latest&&status(latest)==="done"){
+  for(let i=dates.length-1;i>=0;i--){
+   if(dates[i]>end)continue;
+   if(status(dates[i])!=="done")break;
+   current++;
+  }
+ }
+ $("current").textContent=current;
+ $("best").textContent=best;
+ $("total").textContent=completed;
+}
+function renderCalendar(){
+ $("month").textContent=`${monthDate.getFullYear()}년 ${monthDate.getMonth()+1}월`;
+ const first=new Date(monthDate.getFullYear(),monthDate.getMonth(),1);
+ const count=new Date(monthDate.getFullYear(),monthDate.getMonth()+1,0).getDate();
+ let html=weekdays.map(x=>`<div class="weekday">${x}</div>`).join("");
+ for(let i=0;i<first.getDay();i++)html+='<div class="day empty"></div>';
+ for(let n=1;n<=count;n++){
+  const d=new Date(monthDate.getFullYear(),monthDate.getMonth(),n),s=iso(d),st=status(s);
+  html+=`<button class="day ${s===selected?"selected":""} ${s===iso(today)?"today":""} ${st}" data-date="${s}">${n}</button>`;
+ }
+ $("calendar").innerHTML=html;
+ document.querySelectorAll(".day[data-date]").forEach(b=>b.onclick=()=>{selected=b.dataset.date;render();});
+}
+function renderDay(){
+ const d=parse(selected),p=plan(d.getDay()),r=record(selected);
+ $("selected-date").textContent=`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${weekdays[d.getDay()]})`;
+ $("day-heading").textContent=selected===iso(today)?"오늘의 운동":`${d.getMonth()+1}월 ${d.getDate()}일 운동`;
+ let done=p.filter(x=>r[x.id]).length;
+ let percent=p.length?Math.round(done/p.length*100):0;
+ $("progress-bar").style.width=percent+"%";
+ $("progress-text").textContent=p.length?`${done} / ${p.length}개 운동 완료 · ${percent}%`: "휴식일이에요. 충분히 회복하자!";
+ $("exercise-list").innerHTML=p.map(x=>`
+ <div class="exercise ${r[x.id]?"done":""}">
+  <div class="exercise-top">
+   <input type="checkbox" data-check="${x.id}" ${r[x.id]?"checked":""}>
+   <span class="exercise-name">${escapeHTML(x.name)}</span>
+   <button class="remove" data-remove="${x.id}">삭제</button>
+  </div>
+  <div class="fields">
+   <label>세트<input type="number" min="1" data-field="${x.id}" data-key="sets" value="${x.sets??3}"></label>
+   <label>횟수<input type="number" min="1" data-field="${x.id}" data-key="reps" value="${x.reps??10}"></label>
+   <label>무게(kg)<input type="number" min="0" step="0.5" data-field="${x.id}" data-key="weight" value="${x.weight??0}"></label>
+  </div>
+ </div>`).join("");
+ document.querySelectorAll("[data-check]").forEach(el=>el.onchange=()=>{
+  data.records[selected]=record(selected);
+  if(el.checked)data.records[selected][el.dataset.check]=true;
+  else delete data.records[selected][el.dataset.check];
+  save();render();
+ });
+ document.querySelectorAll("[data-remove]").forEach(el=>el.onclick=()=>{
+  if(!confirm("이 요일 루틴에서 운동을 삭제할까?"))return;
+  data.plans[d.getDay()]=plan(d.getDay()).filter(x=>x.id!==el.dataset.remove);
+  save();render();
+ });
+ document.querySelectorAll("[data-field]").forEach(el=>el.onchange=()=>{
+  const x=plan(d.getDay()).find(x=>x.id===el.dataset.field);
+  if(x){x[el.dataset.key]=Number(el.value);save();}
+ });
+}
+function renderWeekdays(){
+ $("weekday-buttons").innerHTML=weekdays.map((w,i)=>`<button data-week="${i}" class="${editDay===i?"primary":""}">${w}</button>`).join("");
+ document.querySelectorAll("[data-week]").forEach(b=>b.onclick=()=>{editDay=Number(b.dataset.week);renderWeekdays();});
+ $("template-info").textContent=`선택한 요일: ${weekdays[editDay]}요일 · 운동 ${plan(editDay).length}개`;
+}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function render(){renderCalendar();renderDay();renderWeekdays();stats();}
+$("add").onclick=()=>{
+ const name=$("new-name").value.trim();
+ if(!name){alert("운동 이름을 입력해 줘.");return;}
+ const d=parse(selected),day=d.getDay();
+ data.plans[day]=plan(day);
+ data.plans[day].push({id:Date.now().toString(),name,sets:3,reps:10,weight:0});
+ $("new-name").value="";
+ save();render();
+};
+$("new-name").addEventListener("keydown",e=>{if(e.key==="Enter")$("add").click();});
+$("prev").onclick=()=>{monthDate.setMonth(monthDate.getMonth()-1);renderCalendar();};
+$("next").onclick=()=>{monthDate.setMonth(monthDate.getMonth()+1);renderCalendar();};
+$("today").onclick=()=>{selected=iso(today);monthDate=new Date(today.getFullYear(),today.getMonth(),1);render();};
+render();
+</script>
+</body>
+</html>
